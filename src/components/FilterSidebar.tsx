@@ -66,7 +66,9 @@ export function FilterSidebar({
   const [addressDraft, setAddressDraft] = useState(origin.address);
   const [countyDropdownOpen, setCountyDropdownOpen] = useState(false);
   const [countySearch, setCountySearch] = useState('');
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
 
   const filteredCountyList = useMemo(() => {
     const q = countySearch.trim().toLowerCase();
@@ -89,29 +91,29 @@ export function FilterSidebar({
 
   if (collapsed) {
     return (
-      <div className="border-b border-black bg-neutral-50 px-4 py-1.5 flex items-center justify-between text-xs shrink-0">
-        <div className="flex items-center gap-3 font-mono-tabular">
+      <div className="border-b border-black bg-neutral-50 px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 text-xs shrink-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono-tabular min-w-0 truncate">
           <span className="font-semibold uppercase tracking-wider">
-            Spatial Query:
+            Query:
           </span>
           <span>
             {filters.searchMode === 'county'
               ? filters.selectedCounties.length === 0
-                ? 'All 58 Counties'
+                ? 'All 58'
                 : `${filters.selectedCounties.length} Counties`
-              : `${filters.radiusMiles} mi from ${origin.address}`}
+              : `${filters.radiusMiles} mi`}
           </span>
           <span className="text-neutral-400">|</span>
-          <span>Pathway: {filters.ceqaPathway}</span>
-          <span className="text-neutral-400">|</span>
-          <span>Min: {filters.minAcres} ac</span>
+          <span className="truncate">{filters.ceqaPathway}</span>
+          <span className="hidden sm:inline text-neutral-400">|</span>
+          <span className="hidden sm:inline">Min: {filters.minAcres} ac</span>
         </div>
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="border border-black bg-white px-2 py-0.5 text-[11px] uppercase tracking-wider font-medium cursor-pointer"
+          className="border border-black bg-white px-2 py-0.5 text-[11px] uppercase tracking-wider font-medium cursor-pointer shrink-0"
         >
-          Expand Filters
+          Filters
         </button>
       </div>
     );

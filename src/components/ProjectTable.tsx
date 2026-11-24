@@ -45,12 +45,12 @@ export function ProjectTable({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white overflow-hidden">
-      <div className="border-b border-black bg-neutral-50 px-3 py-1.5 flex items-center justify-between text-[11px] uppercase tracking-wider shrink-0">
-        <span className="font-semibold">
+    <div className="h-full min-h-[380px] lg:min-h-0 flex flex-col bg-white overflow-hidden">
+      <div className="border-b border-black bg-neutral-50 px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] uppercase tracking-wider shrink-0">
+        <span className="font-semibold truncate">
           Spatial CRM Ledger ({projects.length.toLocaleString()} Sites)
         </span>
-        <span className="text-neutral-500 font-mono-tabular">
+        <span className="hidden sm:inline text-neutral-500 font-mono-tabular shrink-0">
           Click row for Site &amp; Agency Dossier
         </span>
       </div>

@@ -70,6 +70,9 @@ export function App() {
   );
   const [focusTrigger, setFocusTrigger] = useState<number>(0);
   const [importModalOpen, setImportModalOpen] = useState<boolean>(false);
+  const [mobilePane, setMobilePane] = useState<'split' | 'map' | 'ledger'>(
+    'split'
+  );
 
   const handleSyncLive = useCallback(async () => {
     setIsSyncing(true);
@@ -344,7 +347,7 @@ export function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white text-black overflow-hidden">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col bg-white text-black lg:overflow-hidden">
       <HeaderBar
         totalCount={unifiedProjects.length}
         filteredCount={filteredProjects.length}
@@ -371,9 +374,56 @@ export function App() {
         onResetOrigin={handleResetOrigin}
       />
 
+      {/* Mobile Pane Switcher */}
+      <div className="flex lg:hidden border-b border-black bg-neutral-100 divide-x divide-black text-[11px] font-semibold uppercase tracking-wider shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            setMobilePane('split');
+            window.setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+          }}
+          className={`flex-1 py-2 text-center cursor-pointer ${
+            mobilePane === 'split' ? 'bg-black text-white' : 'bg-white text-black'
+          }`}
+        >
+          Split View
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMobilePane('ledger');
+          }}
+          className={`flex-1 py-2 text-center cursor-pointer ${
+            mobilePane === 'ledger' ? 'bg-black text-white' : 'bg-white text-black'
+          }`}
+        >
+          Ledger ({filteredProjects.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMobilePane('map');
+            window.setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+          }}
+          className={`flex-1 py-2 text-center cursor-pointer ${
+            mobilePane === 'map' ? 'bg-black text-white' : 'bg-white text-black'
+          }`}
+        >
+          Map
+        </button>
+      </div>
+
       {/* Split View: Map Left/Top, Sortable Data Table Right/Bottom */}
       <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12">
-        <div className="lg:col-span-6 h-[42vh] lg:h-full min-h-0">
+        <div
+          className={`lg:col-span-6 lg:h-full min-h-0 ${
+            mobilePane === 'ledger'
+              ? 'hidden lg:block'
+              : mobilePane === 'map'
+                ? 'h-[72vh] lg:h-full'
+                : 'h-[38vh] lg:h-full'
+          }`}
+        >
           <MapPanel
             projects={filteredProjects}
             crmRecords={crmRecords}
@@ -386,7 +436,15 @@ export function App() {
           />
         </div>
 
-        <div className="lg:col-span-6 h-full min-h-0">
+        <div
+          className={`lg:col-span-6 lg:h-full min-h-0 ${
+            mobilePane === 'map'
+              ? 'hidden lg:block'
+              : mobilePane === 'ledger'
+                ? 'h-[72vh] lg:h-full'
+                : 'h-[52vh] lg:h-full'
+          }`}
+        >
           <ProjectTable
             projects={filteredProjects}
             crmRecords={crmRecords}
