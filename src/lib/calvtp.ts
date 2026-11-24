@@ -81,12 +81,19 @@ async function fetchLayerGeoJson(
       exceededTransferLimit?: boolean;
     };
 
-    try {
-      data = (await fetchJsonWithTimeout(
-        `/api/calvtp${servicePath}/query?${qs}`,
-        12000
-      )) as typeof data;
-    } catch {
+    if (import.meta.env.DEV) {
+      try {
+        data = (await fetchJsonWithTimeout(
+          `/api/calvtp${servicePath}/query?${qs}`,
+          12000
+        )) as typeof data;
+      } catch {
+        data = (await fetchJsonWithTimeout(
+          `${ARCGIS_BASE}${servicePath}/query?${qs}`,
+          14000
+        )) as typeof data;
+      }
+    } else {
       data = (await fetchJsonWithTimeout(
         `${ARCGIS_BASE}${servicePath}/query?${qs}`,
         14000
@@ -124,12 +131,19 @@ async function fetchProjectCountyLookup(): Promise<Record<string, string[]>> {
       exceededTransferLimit?: boolean;
     };
 
-    try {
-      data = (await fetchJsonWithTimeout(
-        `/api/calvtp${TREATMENTS_PATH}/query?${qs}`,
-        10000
-      )) as typeof data;
-    } catch {
+    if (import.meta.env.DEV) {
+      try {
+        data = (await fetchJsonWithTimeout(
+          `/api/calvtp${TREATMENTS_PATH}/query?${qs}`,
+          10000
+        )) as typeof data;
+      } catch {
+        data = (await fetchJsonWithTimeout(
+          `${ARCGIS_BASE}${TREATMENTS_PATH}/query?${qs}`,
+          12000
+        )) as typeof data;
+      }
+    } else {
       data = (await fetchJsonWithTimeout(
         `${ARCGIS_BASE}${TREATMENTS_PATH}/query?${qs}`,
         12000
@@ -358,7 +372,7 @@ export async function fetchLiveCalvtpRaw(): Promise<RawCalvtpCache> {
 }
 
 export async function fetchOfflineFallbackRaw(): Promise<RawCalvtpCache> {
-  const res = await fetch('/data/calvtp-cache.json');
+  const res = await fetch(`${import.meta.env.BASE_URL}data/calvtp-cache.json`);
   if (!res.ok) {
     throw new Error(`Failed to load offline CalVTP fallback (${res.status})`);
   }

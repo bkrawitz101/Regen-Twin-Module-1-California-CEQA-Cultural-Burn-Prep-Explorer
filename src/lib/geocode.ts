@@ -28,14 +28,19 @@ export async function geocodeAddress(address: string): Promise<OriginPoint> {
     };
   }
 
-  // 1. Try Nominatim (via local Vite proxy first, then direct)
+  // 1. Try Nominatim (via local Vite proxy in dev, then direct)
   const nomQuery = encodeURIComponent(
     trimmed.toLowerCase().includes('ca') ? trimmed : `${trimmed}, California`
   );
-  for (const url of [
-    `/api/nominatim/search?format=json&limit=1&countrycodes=us&q=${nomQuery}`,
-    `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${nomQuery}`,
-  ]) {
+  const nomUrls = import.meta.env.DEV
+    ? [
+        `/api/nominatim/search?format=json&limit=1&countrycodes=us&q=${nomQuery}`,
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${nomQuery}`,
+      ]
+    : [
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${nomQuery}`,
+      ];
+  for (const url of nomUrls) {
     try {
       const controller = new AbortController();
       const t = window.setTimeout(() => controller.abort(), 5000);
