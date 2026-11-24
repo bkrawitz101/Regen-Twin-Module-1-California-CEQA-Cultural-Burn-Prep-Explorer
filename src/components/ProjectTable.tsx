@@ -139,7 +139,24 @@ export function ProjectTable({
                           isSelected ? 'text-neutral-300' : 'text-neutral-500'
                         }`}
                       >
-                        {p.source === 'CEQAnet Import' ? 'CEQAnet' : p.status}
+                        {p.source === 'CEQAnet Import' ? 'CEQAnet' : p.source}
+                      </div>
+                      <div
+                        className={`mt-0.5 inline-block border px-1 py-0 text-[8px] uppercase tracking-wider ${
+                          isSelected
+                            ? 'border-white/40 text-white'
+                            : p.privacyScope === 'completely_private'
+                              ? 'border-red-700 text-red-700'
+                              : p.privacyScope === 'private_recorded'
+                                ? 'border-amber-700 text-amber-800'
+                                : 'border-neutral-400 text-neutral-600'
+                        }`}
+                      >
+                        {p.privacyScope === 'completely_private'
+                          ? 'Closed Private'
+                          : p.privacyScope === 'private_recorded'
+                            ? 'Private Recorded'
+                            : 'Public'}
                       </div>
                     </td>
                     <td className="py-2 px-2.5 border-r border-neutral-200/50 align-top max-w-[260px]">

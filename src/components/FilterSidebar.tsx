@@ -19,6 +19,7 @@ import type {
   OriginPoint,
   OutreachStatus,
   TreatmentCategory,
+  VisibilityFilter,
 } from '../types';
 
 interface FilterSidebarProps {
@@ -52,6 +53,13 @@ const OUTREACH_OPTIONS: Array<OutreachStatus | 'All'> = [
   'Email Sent',
   'In Conversation',
   'Committed for Jan CCC App',
+];
+
+const VISIBILITY_OPTIONS: Array<{ value: VisibilityFilter; label: string }> = [
+  { value: 'all', label: 'All Sites' },
+  { value: 'hide_completely_private', label: 'Hide Completely Private' },
+  { value: 'private_recorded_only', label: 'Private Recorded Only' },
+  { value: 'completely_private_only', label: 'Completely Private Only' },
 ];
 
 export function FilterSidebar({
@@ -401,6 +409,28 @@ export function FilterSidebar({
                 }`}
               >
                 {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mr-1">
+              Site Access:
+            </span>
+            {VISIBILITY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() =>
+                  onChange({ ...filters, visibilityFilter: opt.value })
+                }
+                className={`border border-black px-2 py-0.5 text-[11px] font-medium cursor-pointer transition-colors ${
+                  filters.visibilityFilter === opt.value
+                    ? 'bg-black text-white'
+                    : 'bg-white text-black hover:bg-neutral-100'
+                }`}
+              >
+                {opt.label}
               </button>
             ))}
           </div>

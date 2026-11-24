@@ -9,10 +9,12 @@ import {
   X,
 } from 'lucide-react';
 import { generateReturnCaOutreachEmail } from '../lib/exports';
+import { RecordedIndicatorsPanel } from './RecordedIndicatorsPanel';
 import type { CrmRecord, OutreachStatus, SpatialProject } from '../types';
 
 interface DossierDrawerProps {
   project: SpatialProject | null;
+  allProjects: SpatialProject[];
   crmRecord?: CrmRecord;
   onClose: () => void;
   onUpdateCrm: (projectId: string, patch: Partial<CrmRecord>) => void;
@@ -28,6 +30,7 @@ const OUTREACH_STATUSES: OutreachStatus[] = [
 
 export function DossierDrawer({
   project,
+  allProjects,
   crmRecord,
   onClose,
   onUpdateCrm,
@@ -84,6 +87,10 @@ export function DossierDrawer({
               SCH / ID: {project.schNumber}
             </span>
             <span>{project.source}</span>
+            <span>·</span>
+            <span className="border border-white/30 px-1 py-0">
+              {project.accessLabel}
+            </span>
             <span>·</span>
             <span>{project.dateLabel}</span>
           </div>
@@ -241,6 +248,9 @@ export function DossierDrawer({
             </p>
           )}
         </div>
+
+        {/* Recorded Studies & Private Data Indicators */}
+        <RecordedIndicatorsPanel project={project} allProjects={allProjects} />
 
         {/* Lead Agency & Editable Contact CRM */}
         <div className="border border-black p-3 space-y-2.5 bg-neutral-50">

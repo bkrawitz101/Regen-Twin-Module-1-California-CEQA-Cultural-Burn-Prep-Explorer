@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import * as turf from '@turf/turf';
-import { Maximize2, Moon, Sun } from 'lucide-react';
+import { Maximize2, Moon, Radar, Sun } from 'lucide-react';
 import type { FeatureCollection, Geometry } from 'geojson';
 import { createRadiusCircle } from '../lib/spatial';
 import type {
@@ -17,6 +17,9 @@ interface MapPanelProps {
   crmRecords: Record<string, CrmRecord>;
   selectedProjectId: string | null;
   onSelectProject: (project: SpatialProject) => void;
+  onProbeLocation: (lng: number, lat: number) => void;
+  onScanAreaPrivateSites: (bbox: [number, number, number, number]) => void;
+  isScanningPrivate: boolean;
   origin: OriginPoint;
   searchMode: SearchMode;
   radiusMiles: number;
@@ -50,6 +53,9 @@ export function MapPanel({
   crmRecords,
   selectedProjectId,
   onSelectProject,
+  onProbeLocation,
+  onScanAreaPrivateSites,
+  isScanningPrivate,
   origin,
   searchMode,
   radiusMiles,
@@ -82,6 +88,7 @@ export function MapPanel({
             schNumber: p.schNumber,
             title: p.title,
             county: p.county,
+            privacyScope: p.privacyScope,
             totalAcres: p.totalAcres,
             distanceFromOriginMiles: p.distanceFromOriginMiles,
             outreachStatus:
@@ -108,6 +115,7 @@ export function MapPanel({
           title: p.title,
           county: p.county,
           source: p.source,
+          privacyScope: p.privacyScope,
           totalAcres: p.totalAcres,
           distanceFromOriginMiles: p.distanceFromOriginMiles,
           outreachStatus: crmRecords[p.id]?.outreachStatus ?? 'Not Contacted',
@@ -149,6 +157,8 @@ export function MapPanel({
   // Keep latest callback/map lookup in refs for MapLibre event handlers
   const selectRef = useRef(onSelectProject);
   selectRef.current = onSelectProject;
+  const probeRef = useRef(onProbeLocation);
+  probeRef.current = onProbeLocation;
   const projectsByIdRef = useRef(projectsById);
   projectsByIdRef.current = projectsById;
 
@@ -211,6 +221,10 @@ export function MapPanel({
               'Committed for Jan CCC App',
             ],
             '#10b981',
+            ['==', ['get', 'privacyScope'], 'private_recorded'],
+            '#d97706',
+            ['==', ['get', 'privacyScope'], 'completely_private'],
+            '#dc2626',
             fill,
           ],
           'fill-opacity': [
@@ -223,7 +237,7 @@ export function MapPanel({
               'Committed for Jan CCC App',
             ],
             0.35,
-            0.18,
+            0.2,
           ],
         },
       });
@@ -367,6 +381,18 @@ export function MapPanel({
       map.on('click', layerId, handleClick);
     }
 
+    // Click anywhere on empty map canvas to drop a Private Parcel Probe & inspect indicators
+    map.on('click', (e) => {
+      const hits = map.queryRenderedFeatures(e.point, {
+        layers: ['projects-poly-fill', 'projects-pt-circle'].filter((id) =>
+          Boolean(map.getLayer(id))
+        ),
+      });
+      if (hits.length === 0) {
+        probeRef.current(e.lngLat.lng, e.lngLat.lat);
+      }
+    });
+
     mapRef.current = map;
 
     return () => {
@@ -477,21 +503,46 @@ export function MapPanel({
           <Maximize2 className="w-3 h-3" />
           <span>Fit ({projects.length})</span>
         </button>
+
+        <button
+          type="button"
+          disabled={isScanningPrivate}
+          onClick={() => {
+            const map = mapRef.current;
+            if (!map) return;
+            const b = map.getBounds();
+            onScanAreaPrivateSites([
+              b.getWest(),
+              b.getSouth(),
+              b.getEast(),
+              b.getNorth(),
+            ]);
+          }}
+          className="inline-flex items-center gap-1 border border-black bg-black text-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider cursor-pointer hover:bg-neutral-800 disabled:opacity-50"
+          title="Load live CCED Easements & CalTREES Timber Plans inside current map view"
+        >
+          <Radar className={`w-3 h-3 ${isScanningPrivate ? 'animate-spin' : ''}`} />
+          <span>{isScanningPrivate ? 'Scanning...' : 'Scan Area (Private)'}</span>
+        </button>
       </div>
 
       {/* Bottom-left Cartographic Legend */}
       <div className="absolute bottom-3 left-3 z-10 border border-black bg-white/95 px-2.5 py-1.5 text-[10px] uppercase tracking-wider space-y-1">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-2.5 border border-black bg-black/20" />
-          <span>CalVTP Boundary Polygon</span>
+          <span>Public CEQA / CalVTP</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-block w-2.5 h-2.5 rounded-full bg-black border border-white ring-1 ring-black" />
-          <span>Proposed / CEQAnet Site</span>
+          <span className="inline-block w-3 h-2.5 border border-black bg-amber-600/35" />
+          <span>Private Recorded (CCED / CalTREES)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-2.5 border border-black bg-red-600/35" />
+          <span>Closed / Completely Private</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
-          <span>Committed for Jan CCC</span>
+          <span>Committed for Jan CCC · Click map to probe</span>
         </div>
       </div>
     </div>

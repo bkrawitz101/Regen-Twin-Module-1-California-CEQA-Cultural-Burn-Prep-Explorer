@@ -26,6 +26,12 @@ import {
   saveCrmRecords,
   saveImportedProjects,
 } from './lib/storage';
+import {
+  createParcelProbeProject,
+  fetchLivePrivateRecordedInBbox,
+  fetchOfflinePrivateRecordedRaw,
+  normalizePrivateRecordedCache,
+} from './services/privateRecordedSites';
 import type {
   CrmRecord,
   FilterState,
@@ -35,6 +41,10 @@ import type {
 
 export function App() {
   const [calvtpProjects, setCalvtpProjects] = useState<SpatialProject[]>([]);
+  const [privateRecordedProjects, setPrivateRecordedProjects] = useState<
+    SpatialProject[]
+  >([]);
+  const [probeProjects, setProbeProjects] = useState<SpatialProject[]>([]);
   const [importedProjects, setImportedProjects] = useState<SpatialProject[]>([]);
   const [crmRecords, setCrmRecords] = useState<Record<string, CrmRecord>>({});
 
@@ -43,6 +53,7 @@ export function App() {
   >('loading');
   const [lastSyncedAt, setLastSyncedAt] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isScanningPrivate, setIsScanningPrivate] = useState<boolean>(false);
 
   const [origin, setOrigin] = useState<OriginPoint>({
     address: THREE_SUNS_ADDRESS,
@@ -58,6 +69,7 @@ export function App() {
     radiusMiles: 100,
     ceqaPathway: 'All',
     treatmentFilter: 'All',
+    visibilityFilter: 'all',
     minAcres: 0,
     searchQuery: '',
     outreachFilter: 'All',
@@ -106,6 +118,18 @@ export function App() {
       setCrmRecords(crm);
       setImportedProjects(imported);
 
+      // Load local CCED + CalTREES private-recorded fallback immediately
+      try {
+        const privRaw = await fetchOfflinePrivateRecordedRaw();
+        if (active) {
+          setPrivateRecordedProjects(
+            normalizePrivateRecordedCache(privRaw, THREE_SUNS_COORDS)
+          );
+        }
+      } catch {
+        // optional fallback
+      }
+
       if (idbRaw) {
         const norm = normalizeCalvtpFeatures(idbRaw, THREE_SUNS_COORDS);
         setCalvtpProjects(norm.projects);
@@ -150,6 +174,12 @@ export function App() {
     for (const p of calvtpProjects) {
       mergedMap.set(p.schNumber || p.id, p);
     }
+    for (const priv of privateRecordedProjects) {
+      mergedMap.set(priv.id, priv);
+    }
+    for (const probe of probeProjects) {
+      mergedMap.set(probe.id, probe);
+    }
     for (const imp of importedProjects) {
       mergedMap.set(imp.id, imp);
     }
@@ -164,7 +194,13 @@ export function App() {
         ? p.distanceFromThreeSunsMiles
         : computeDistanceMiles(origin.coords, p.geometry, p.centroid),
     }));
-  }, [calvtpProjects, importedProjects, origin.coords]);
+  }, [
+    calvtpProjects,
+    privateRecordedProjects,
+    probeProjects,
+    importedProjects,
+    origin.coords,
+  ]);
 
   // Real-time spatial + CEQA + CRM filtering and sorting
   const filteredProjects = useMemo(() => {
@@ -197,6 +233,25 @@ export function App() {
       }
 
       if (filters.minAcres > 0 && p.totalAcres < filters.minAcres) {
+        return false;
+      }
+
+      if (
+        filters.visibilityFilter === 'hide_completely_private' &&
+        p.privacyScope === 'completely_private'
+      ) {
+        return false;
+      }
+      if (
+        filters.visibilityFilter === 'private_recorded_only' &&
+        p.privacyScope !== 'private_recorded'
+      ) {
+        return false;
+      }
+      if (
+        filters.visibilityFilter === 'completely_private_only' &&
+        p.privacyScope !== 'completely_private'
+      ) {
         return false;
       }
 
@@ -346,6 +401,42 @@ export function App() {
     void saveImportedProjects(imported);
   };
 
+  const handleScanAreaPrivateSites = useCallback(
+    async (bbox: [number, number, number, number]) => {
+      setIsScanningPrivate(true);
+      try {
+        const scanned = await fetchLivePrivateRecordedInBbox(
+          bbox,
+          origin.coords
+        );
+        setPrivateRecordedProjects((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          for (const item of scanned) {
+            map.set(item.id, item);
+          }
+          return Array.from(map.values());
+        });
+      } catch {
+        // preserve existing cached private-recorded sites if offline
+      } finally {
+        setIsScanningPrivate(false);
+      }
+    },
+    [origin.coords]
+  );
+
+  const handleProbeLocation = useCallback(
+    (lng: number, lat: number) => {
+      const probe = createParcelProbeProject(lng, lat, origin.coords);
+      setProbeProjects((prev) => [
+        probe,
+        ...prev.filter((p) => p.id !== probe.id).slice(0, 9),
+      ]);
+      setSelectedProjectId(probe.id);
+    },
+    [origin.coords]
+  );
+
   return (
     <div className="min-h-screen lg:h-screen w-full flex flex-col bg-white text-black lg:overflow-hidden">
       <HeaderBar
@@ -429,6 +520,11 @@ export function App() {
             crmRecords={crmRecords}
             selectedProjectId={selectedProjectId}
             onSelectProject={(p) => setSelectedProjectId(p.id)}
+            onProbeLocation={handleProbeLocation}
+            onScanAreaPrivateSites={(bbox) =>
+              void handleScanAreaPrivateSites(bbox)
+            }
+            isScanningPrivate={isScanningPrivate}
             origin={origin}
             searchMode={filters.searchMode}
             radiusMiles={filters.radiusMiles}
@@ -459,6 +555,7 @@ export function App() {
 
       <DossierDrawer
         project={selectedProject}
+        allProjects={unifiedProjects}
         crmRecord={
           selectedProject ? crmRecords[selectedProject.id] : undefined
         }
