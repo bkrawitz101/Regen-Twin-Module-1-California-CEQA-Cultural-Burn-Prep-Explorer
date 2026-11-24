@@ -3,8 +3,10 @@ import {
   Check,
   Copy,
   Crosshair,
+  Expand,
   ExternalLink,
   Mail,
+  Minimize2,
   Send,
   X,
 } from 'lucide-react';
@@ -19,6 +21,8 @@ interface DossierDrawerProps {
   onClose: () => void;
   onUpdateCrm: (projectId: string, patch: Partial<CrmRecord>) => void;
   onZoomToSite: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const OUTREACH_STATUSES: OutreachStatus[] = [
@@ -35,6 +39,8 @@ export function DossierDrawer({
   onClose,
   onUpdateCrm,
   onZoomToSite,
+  isFullscreen = false,
+  onToggleFullscreen,
 }: DossierDrawerProps) {
   const [emailDraft, setEmailDraft] = useState<{
     subject: string;
@@ -78,9 +84,15 @@ export function DossierDrawer({
     : '#';
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white border-l border-black flex flex-col">
+    <aside
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-50 bg-white flex flex-col'
+          : 'fixed inset-0 z-50 lg:static lg:z-auto lg:h-full w-full bg-white flex flex-col min-h-0'
+      }
+    >
       {/* Header */}
-      <div className="border-b border-black px-4 py-3 flex items-start justify-between gap-3 bg-black text-white">
+      <div className="border-b border-black px-4 py-3 flex items-start justify-between gap-3 bg-black text-white shrink-0">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono-tabular uppercase tracking-wider text-neutral-300">
             <span className="border border-white/40 px-1.5 py-0.5 text-white">
@@ -99,14 +111,40 @@ export function DossierDrawer({
           </h2>
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="border border-white/40 p-1 hover:bg-white hover:text-black cursor-pointer shrink-0"
-          aria-label="Close dossier"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              onClick={onToggleFullscreen}
+              className="inline-flex items-center gap-1 border border-white/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider hover:bg-white hover:text-black cursor-pointer"
+              title={
+                isFullscreen
+                  ? 'Exit Fullscreen Dossier (Esc)'
+                  : 'Fullscreen Dossier'
+              }
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Exit Full</span>
+                </>
+              ) : (
+                <>
+                  <Expand className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Full</span>
+                </>
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="border border-white/40 p-1 hover:bg-white hover:text-black cursor-pointer"
+            aria-label="Close dossier"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Body */}

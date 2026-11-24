@@ -39,7 +39,7 @@ export type VisibilityFilter =
 
 export type SearchMode = 'county' | 'radius';
 
-export type BasemapTheme = 'light' | 'dark';
+export type BasemapTheme = 'light' | 'dark' | 'satellite';
 
 export interface SpatialProject {
   id: string;

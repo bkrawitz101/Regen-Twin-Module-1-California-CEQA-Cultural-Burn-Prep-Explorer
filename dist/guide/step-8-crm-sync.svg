@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" fill="none">
+  <rect width="420" height="200" fill="#F7F6F2" stroke="#000" stroke-width="2"/>
+  <rect x="16" y="18" width="186" height="44" fill="#000"/>
+  <text x="26" y="37" fill="#FFF" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="700">SYNC CALVTP LIVE GIS</text>
+  <text x="26" y="52" fill="#CCC" font-family="monospace" font-size="9">or auto-boot Offline Cache</text>
+  <rect x="216" y="18" width="188" height="44" fill="#FFF" stroke="#000" stroke-width="1.5"/>
+  <text x="226" y="37" fill="#000" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="700">CEQA &amp; TREATMENT FILTERS</text>
+  <text x="226" y="52" fill="#555" font-family="monospace" font-size="9">CalVTP · SERP · NOE · AB211</text>
+  <rect x="16" y="76" width="388" height="106" fill="#FFF" stroke="#000" stroke-width="1.5"/>
+  <text x="28" y="96" fill="#000" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700">SORTABLE LEDGER + LOCAL STORAGE</text>
+  <line x1="16" y1="106" x2="404" y2="106" stroke="#000" stroke-width="1"/>
+  <text x="28" y="124" fill="#000" font-family="monospace" font-size="9">SCH / ID   | PROJECT &amp; AGENCY       | ACRES | DIST  | STATUS</text>
+  <line x1="16" y1="132" x2="404" y2="132" stroke="#DDD" stroke-width="1"/>
+  <text x="28" y="149" fill="#000" font-family="monospace" font-size="9">2020-9     | Yuba Foothills Healthy | 4,054 |  6.1  | Committed</text>
+  <text x="28" y="168" fill="#555" font-family="monospace" font-size="9">CCED-16252 | Sundance Ranch CE      |  10.0 |  4.3  | Not Contacted</text>
+</svg>

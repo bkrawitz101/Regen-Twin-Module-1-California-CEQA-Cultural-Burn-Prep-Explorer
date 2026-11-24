@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DossierDrawer } from './components/DossierDrawer';
 import { FilterSidebar } from './components/FilterSidebar';
+import { GuideModal, type GuideTab } from './components/GuideModal';
 import { HeaderBar } from './components/HeaderBar';
 import { ImportModal } from './components/ImportModal';
 import { MapPanel } from './components/MapPanel';
@@ -82,9 +83,39 @@ export function App() {
   );
   const [focusTrigger, setFocusTrigger] = useState<number>(0);
   const [importModalOpen, setImportModalOpen] = useState<boolean>(false);
+  const [guideModalOpen, setGuideModalOpen] = useState<boolean>(false);
+  const [guideTab, setGuideTab] = useState<GuideTab>('guide');
   const [mobilePane, setMobilePane] = useState<'split' | 'map' | 'ledger'>(
     'split'
   );
+  const [fullscreenSection, setFullscreenSection] = useState<
+    'map' | 'ledger' | 'dossier' | null
+  >(null);
+  const [mapSplitRatio, setMapSplitRatio] = useState<number>(0.5);
+  const [dossierWidthPx, setDossierWidthPx] = useState<number>(460);
+  const [mobileMapVh, setMobileMapVh] = useState<number>(38);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
+  const workspaceRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && fullscreenSection) {
+        setFullscreenSection(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenSection]);
 
   const handleSyncLive = useCallback(async () => {
     setIsSyncing(true);
@@ -437,6 +468,61 @@ export function App() {
     [origin.coords]
   );
 
+  const startMapLedgerResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const container = workspaceRef.current;
+    if (!container) return;
+
+    const onMove = (ev: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      const reservedDossier = selectedProject ? dossierWidthPx + 8 : 0;
+      const availWidth = Math.max(320, rect.width - reservedDossier);
+      const rawRatio = (ev.clientX - rect.left) / availWidth;
+      setMapSplitRatio(Math.max(0.18, Math.min(0.82, rawRatio)));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  const startDossierResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const container = workspaceRef.current;
+    if (!container) return;
+
+    const onMove = (ev: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      const nextWidth = rect.right - ev.clientX;
+      const maxAllowed = Math.max(360, rect.width - 360);
+      setDossierWidthPx(Math.max(320, Math.min(maxAllowed, nextWidth)));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  const startMobileVerticalResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startVh = mobileMapVh;
+    const onMove = (ev: PointerEvent) => {
+      const dyVh = ((ev.clientY - startY) / window.innerHeight) * 100;
+      setMobileMapVh(Math.max(20, Math.min(72, startVh + dyVh)));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
   return (
     <div className="min-h-screen lg:h-screen w-full flex flex-col bg-white text-black lg:overflow-hidden">
       <HeaderBar
@@ -449,6 +535,14 @@ export function App() {
         isSyncing={isSyncing}
         onSyncLive={() => void handleSyncLive()}
         onOpenImport={() => setImportModalOpen(true)}
+        onOpenGuide={() => {
+          setGuideTab('guide');
+          setGuideModalOpen(true);
+        }}
+        onOpenFeatures={() => {
+          setGuideTab('features');
+          setGuideModalOpen(true);
+        }}
         onExportCsv={() => exportProjectsCsv(filteredProjects, crmRecords)}
         onExportGeoJson={() =>
           exportProjectsGeoJson(filteredProjects, crmRecords)
@@ -504,23 +598,50 @@ export function App() {
         </button>
       </div>
 
-      {/* Split View: Map Left/Top, Sortable Data Table Right/Bottom */}
-      <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12">
+      {/* Split View: Resizable Map + Ledger + Docked Dossier */}
+      <main
+        ref={workspaceRef}
+        className="flex-1 min-h-0 flex flex-col lg:flex-row relative"
+      >
+        {/* Map Pane */}
         <div
-          className={`lg:col-span-6 lg:h-full min-h-0 ${
-            mobilePane === 'ledger'
-              ? 'hidden lg:block'
-              : mobilePane === 'map'
-                ? 'h-[72vh] lg:h-full'
-                : 'h-[38vh] lg:h-full'
-          }`}
+          style={
+            fullscreenSection === 'map'
+              ? undefined
+              : isDesktop
+                ? {
+                    width: selectedProject
+                      ? `calc((100% - ${dossierWidthPx + 16}px) * ${mapSplitRatio})`
+                      : `calc((100% - 8px) * ${mapSplitRatio})`,
+                  }
+                : mobilePane === 'split'
+                  ? { height: `${mobileMapVh}vh` }
+                  : undefined
+          }
+          className={
+            fullscreenSection === 'map'
+              ? 'fixed inset-0 z-50 bg-white'
+              : `min-h-0 shrink-0 ${
+                  mobilePane === 'ledger'
+                    ? 'hidden lg:block lg:h-full'
+                    : mobilePane === 'map'
+                      ? 'h-[72vh] lg:h-full'
+                      : 'lg:h-full'
+                }`
+          }
         >
           <MapPanel
             projects={filteredProjects}
             crmRecords={crmRecords}
             selectedProjectId={selectedProjectId}
-            onSelectProject={(p) => setSelectedProjectId(p.id)}
-            onProbeLocation={handleProbeLocation}
+            onSelectProject={(p) => {
+              setSelectedProjectId(p.id);
+              if (fullscreenSection === 'map') setFullscreenSection(null);
+            }}
+            onProbeLocation={(lng, lat) => {
+              handleProbeLocation(lng, lat);
+              if (fullscreenSection === 'map') setFullscreenSection(null);
+            }}
             onScanAreaPrivateSites={(bbox) =>
               void handleScanAreaPrivateSites(bbox)
             }
@@ -529,17 +650,49 @@ export function App() {
             searchMode={filters.searchMode}
             radiusMiles={filters.radiusMiles}
             focusTrigger={focusTrigger}
+            isFullscreen={fullscreenSection === 'map'}
+            onToggleFullscreen={() =>
+              setFullscreenSection((s) => (s === 'map' ? null : 'map'))
+            }
           />
         </div>
 
+        {/* Mobile Horizontal Splitter (Split View) */}
+        {mobilePane === 'split' && !fullscreenSection && (
+          <div
+            onPointerDown={startMobileVerticalResize}
+            title="Drag to resize Map / Ledger height"
+            className="flex lg:hidden h-3 bg-neutral-200 border-b border-black items-center justify-center cursor-row-resize touch-none select-none shrink-0"
+          >
+            <div className="w-10 h-1 bg-black/50" />
+          </div>
+        )}
+
+        {/* Desktop Vertical Splitter 1: Map <-> Ledger */}
+        {!fullscreenSection && (
+          <div
+            onPointerDown={startMapLedgerResize}
+            onDoubleClick={() => setMapSplitRatio(0.5)}
+            title="Drag to resize Map / Ledger (double-click to reset 50/50)"
+            className="hidden lg:flex w-2 bg-neutral-100 hover:bg-neutral-300 border-x border-black items-center justify-center cursor-col-resize select-none shrink-0 transition-colors"
+          >
+            <div className="w-0.5 h-10 bg-black/40" />
+          </div>
+        )}
+
+        {/* Ledger Pane */}
         <div
-          className={`lg:col-span-6 lg:h-full min-h-0 ${
-            mobilePane === 'map'
-              ? 'hidden lg:block'
-              : mobilePane === 'ledger'
-                ? 'h-[72vh] lg:h-full'
-                : 'h-[52vh] lg:h-full'
-          }`}
+          className={
+            fullscreenSection === 'ledger'
+              ? 'fixed inset-0 z-50 bg-white'
+              : `flex-1 min-w-0 min-h-0 ${
+                  mobilePane === 'map'
+                    ? 'hidden lg:block lg:h-full'
+                    : mobilePane === 'ledger'
+                      ? 'h-[72vh] lg:h-full'
+                      : 'lg:h-full'
+                }`
+          }
         >
           <ProjectTable
             projects={filteredProjects}
@@ -549,20 +702,64 @@ export function App() {
             sortAsc={sortAsc}
             onSort={handleSort}
             onSelectProject={(p) => setSelectedProjectId(p.id)}
+            isFullscreen={fullscreenSection === 'ledger'}
+            onToggleFullscreen={() =>
+              setFullscreenSection((s) => (s === 'ledger' ? null : 'ledger'))
+            }
           />
         </div>
-      </main>
 
-      <DossierDrawer
-        project={selectedProject}
-        allProjects={unifiedProjects}
-        crmRecord={
-          selectedProject ? crmRecords[selectedProject.id] : undefined
-        }
-        onClose={() => setSelectedProjectId(null)}
-        onUpdateCrm={handleUpdateCrm}
-        onZoomToSite={() => setFocusTrigger((n) => n + 1)}
-      />
+        {/* Desktop Vertical Splitter 2: Ledger <-> Dossier */}
+        {selectedProject && !fullscreenSection && (
+          <div
+            onPointerDown={startDossierResize}
+            onDoubleClick={() => setDossierWidthPx(460)}
+            title="Drag to resize Dossier width (double-click to reset)"
+            className="hidden lg:flex w-2 bg-neutral-100 hover:bg-neutral-300 border-x border-black items-center justify-center cursor-col-resize select-none shrink-0 transition-colors"
+          >
+            <div className="w-0.5 h-10 bg-black/40" />
+          </div>
+        )}
+
+        {/* Docked / Resizable / Fullscreen Dossier Drawer */}
+        {selectedProject && (
+          <div
+            style={
+              fullscreenSection === 'dossier'
+                ? undefined
+                : isDesktop
+                  ? { width: `${dossierWidthPx}px` }
+                  : undefined
+            }
+            className={
+              fullscreenSection === 'dossier'
+                ? 'fixed inset-0 z-50 bg-white'
+                : 'lg:h-full lg:shrink-0 min-h-0'
+            }
+          >
+            <DossierDrawer
+              project={selectedProject}
+              allProjects={unifiedProjects}
+              crmRecord={crmRecords[selectedProject.id]}
+              onClose={() => {
+                setFullscreenSection((s) => (s === 'dossier' ? null : s));
+                setSelectedProjectId(null);
+              }}
+              onUpdateCrm={handleUpdateCrm}
+              onZoomToSite={() => {
+                setFullscreenSection(null);
+                setFocusTrigger((n) => n + 1);
+              }}
+              isFullscreen={fullscreenSection === 'dossier'}
+              onToggleFullscreen={() =>
+                setFullscreenSection((s) =>
+                  s === 'dossier' ? null : 'dossier'
+                )
+              }
+            />
+          </div>
+        )}
+      </main>
 
       <ImportModal
         open={importModalOpen}
@@ -573,6 +770,12 @@ export function App() {
         onMergeImported={handleMergeImported}
         onClearImported={handleClearImported}
         onRestoreBackup={handleRestoreBackup}
+      />
+
+      <GuideModal
+        open={guideModalOpen}
+        initialTab={guideTab}
+        onClose={() => setGuideModalOpen(false)}
       />
     </div>
   );

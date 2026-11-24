@@ -1,4 +1,10 @@
-import { ArrowDown, ArrowUp, ExternalLink } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Expand,
+  ExternalLink,
+  Minimize2,
+} from 'lucide-react';
 import type { CrmRecord, OutreachStatus, SpatialProject } from '../types';
 
 export type SortField =
@@ -17,6 +23,8 @@ interface ProjectTableProps {
   sortAsc: boolean;
   onSort: (field: SortField) => void;
   onSelectProject: (project: SpatialProject) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const STATUS_BADGE: Record<OutreachStatus, string> = {
@@ -34,6 +42,8 @@ export function ProjectTable({
   sortAsc,
   onSort,
   onSelectProject,
+  isFullscreen = false,
+  onToggleFullscreen,
 }: ProjectTableProps) {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null;
@@ -50,9 +60,39 @@ export function ProjectTable({
         <span className="font-semibold truncate">
           Spatial CRM Ledger ({projects.length.toLocaleString()} Sites)
         </span>
-        <span className="hidden sm:inline text-neutral-500 font-mono-tabular shrink-0">
-          Click row for Site &amp; Agency Dossier
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="hidden xl:inline text-neutral-500 font-mono-tabular">
+            Click row for Dossier
+          </span>
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              onClick={onToggleFullscreen}
+              className={`inline-flex items-center gap-1 border border-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider cursor-pointer ${
+                isFullscreen
+                  ? 'bg-black text-white hover:bg-neutral-800'
+                  : 'bg-white text-black hover:bg-neutral-100'
+              }`}
+              title={
+                isFullscreen
+                  ? 'Exit Fullscreen Ledger (Esc)'
+                  : 'Fullscreen Ledger'
+              }
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3 h-3" />
+                  <span>Exit Full</span>
+                </>
+              ) : (
+                <>
+                  <Expand className="w-3 h-3" />
+                  <span>Full Ledger</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">

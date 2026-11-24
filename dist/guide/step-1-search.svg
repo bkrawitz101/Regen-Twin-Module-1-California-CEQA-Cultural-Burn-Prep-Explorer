@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" fill="none">
+  <rect width="420" height="200" fill="#F7F6F2" stroke="#000" stroke-width="2"/>
+  <rect x="16" y="16" width="128" height="28" fill="#000"/>
+  <text x="26" y="34" fill="#FFF" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="700">MODE A: COUNTIES</text>
+  <rect x="148" y="16" width="128" height="28" fill="#FFF" stroke="#000" stroke-width="1.5"/>
+  <text x="158" y="34" fill="#000" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="700">MODE B: RADIUS</text>
+  <rect x="16" y="56" width="210" height="32" fill="#FFF" stroke="#000" stroke-width="1.5"/>
+  <text x="26" y="76" fill="#000" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="600">3 Suns 4-Hour Drive Shed (34)</text>
+  <rect x="16" y="100" width="210" height="28" fill="#FFF" stroke="#000" stroke-width="1"/>
+  <text x="24" y="118" fill="#555" font-family="monospace" font-size="10">13418 McKitrick Ranch Rd...</text>
+  <line x1="16" y1="152" x2="174" y2="152" stroke="#000" stroke-width="2"/>
+  <circle cx="96" cy="152" r="6" fill="#000"/>
+  <rect x="182" y="140" width="44" height="22" fill="#FFF" stroke="#000" stroke-width="1"/>
+  <text x="190" y="155" fill="#000" font-family="monospace" font-size="10" font-weight="700">100 MI</text>
+  <circle cx="325" cy="100" r="66" fill="#000" fill-opacity="0.06" stroke="#000" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <circle cx="325" cy="100" r="7" fill="#000" stroke="#FFF" stroke-width="2"/>
+  <circle cx="298" cy="78" r="4" fill="#000"/>
+  <circle cx="348" cy="122" r="4" fill="#D97706"/>
+  <text x="288" y="182" fill="#000" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="700">3 SUNS FARM ORIGIN</text>
+</svg>

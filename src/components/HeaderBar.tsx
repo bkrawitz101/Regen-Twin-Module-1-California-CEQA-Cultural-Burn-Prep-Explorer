@@ -1,7 +1,9 @@
 import {
+  BookOpen,
   Database,
   Download,
   FileSpreadsheet,
+  Layers,
   RefreshCw,
   Upload,
   Wifi,
@@ -18,6 +20,8 @@ interface HeaderBarProps {
   isSyncing: boolean;
   onSyncLive: () => void;
   onOpenImport: () => void;
+  onOpenGuide: () => void;
+  onOpenFeatures: () => void;
   onExportCsv: () => void;
   onExportGeoJson: () => void;
 }
@@ -32,6 +36,8 @@ export function HeaderBar({
   isSyncing,
   onSyncLive,
   onOpenImport,
+  onOpenGuide,
+  onOpenFeatures,
   onExportCsv,
   onExportGeoJson,
 }: HeaderBarProps) {
@@ -141,6 +147,26 @@ export function HeaderBar({
           >
             <Download className="w-3.5 h-3.5" />
             <span>.GeoJSON</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenGuide}
+            className="inline-flex items-center gap-1.5 border border-black bg-white hover:bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors"
+            title="Open visual step-by-step guide"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Guide</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenFeatures}
+            className="inline-flex items-center gap-1.5 border border-black bg-white hover:bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors"
+            title="View full feature list & PDF"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Features</span>
           </button>
         </div>
       </div>
